@@ -136,36 +136,36 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 *
 *    ENDIF.
 
-    DATA: lt_flights TYPE SORTED TABLE OF /dmo/flight
-                      WITH NON-UNIQUE KEY carrier_id connection_id.
+*    DATA: lt_flights TYPE SORTED TABLE OF /dmo/flight
+*                      WITH NON-UNIQUE KEY carrier_id connection_id.
 
-    SELECT FROM /dmo/flight
-        FIELDS *
-        "INTO  @DATA(ls_flights).
-      INTO TABLE @lt_flights
-      PACKAGE SIZE 3.
-
-      "out->write( ls_flights ).
-      out->write( lt_flights ).
-
-    ENDSELECT.
-
-*  SELECT single  for Update
-*  FROM zflight_lgl
+*    SELECT FROM /dmo/flight
 *        FIELDS *
-*         INTO @data(lt_flights).
+*        "INTO  @DATA(ls_flights).
+*      INTO TABLE @lt_flights
+*      PACKAGE SIZE 3.
 *
-*  SELECT single
-*  FROM zflight_lgl USING CLIENT '200'
-*        FIELDS *
-*         INTO @data(lt_flights).
+*      "out->write( ls_flights ).
+*      out->write( lt_flights ).
+*
+*    ENDSELECT.
+
+*    SELECT SINGLE FOR UPDATE
+*    FROM zflight_lgl
+*          FIELDS *
+*           INTO @DATA(lt_flights).
+*
+*    SELECT SINGLE
+*    FROM zcarrier_c383 USING CLIENT '200'
+*          FIELDS *
+*           INTO @DATA(lt_flights).
 *
 *
-*   select from /DMO/I_Flight
-*   FIELDS *
-*   FOR ALL ENTRIES IN @lt_flights
-*   where AirlineID = @lt_flights-airlineid
-*   into table @data(lt_dummy).
+*    SELECT FROM /DMO/I_Flight
+*    FIELDS *
+*    FOR ALL ENTRIES IN @lt_flights
+*    WHERE AirlineID = @lt_flights-carrier_id
+*    INTO TABLE @DATA(lt_dummy).
 
 *    SELECT FROM /dmo/flight
 *            FIELDS *
@@ -177,11 +177,12 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 * LT, <
 * LE, <=
 * EQ, =
+* NE, <>
 
 *    SELECT FROM /dmo/flight
 *    FIELDS *
-*     WHERE flight_date GE '20240414'
-*       AND flight_date LE '20250414'
+*     WHERE flight_date GE '20250414'
+*       AND flight_date LE '20260414'
 *      INTO TABLE @DATA(lt_flights).
 *
 *    IF sy-subrc = 0.
@@ -199,7 +200,9 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 *      out->write( lt_flight2 ).
 *    ENDIF.
 
-*    DATA: lv_search_criteria TYPE string VALUE '%_egel%'.
+    "DATA: lv_search_criteria TYPE string VALUE '%__egel%'.
+
+*     DATA: lv_search_criteria TYPE string VALUE '%erlin%'.
 *
 *    SELECT FROM /DMO/I_Airport
 *    FIELDS *
@@ -213,13 +216,13 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 *    ENDIF.
 
 
-*    modify zcarrier_0904 from @( VALUE #( carrier_id = 'AV'
+*    MODIFY zcarrier_c383 FROM @( VALUE #( carrier_id = 'AV'
 *                                             name = 'AVIANCA%'
 *                                    currency_code = 'COP' ) ) .
-
+*
 *    DATA: c_escape TYPE c LENGTH 1 VALUE '*'.
 *
-*    SELECT FROM zcarrier_0904
+*    SELECT FROM zcarrier_c383
 *    FIELDS *
 *     WHERE name LIKE '%*%%' ESCAPE @c_escape
 *      INTO TABLE @DATA(lt_carrier).
@@ -241,7 +244,7 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 *      out->write( 'No Data' ).
 *    ENDIF.
 
-*    DATA lr_price TYPE RANGE OF /dmo/price.
+*    DATA lr_price TYPE RANGE OF /dmo/flight_price.
 *
 *    lr_price = VALUE #( ( sign = 'I' "E
 *                          option = 'BT' " EQ
@@ -251,7 +254,7 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 *    APPEND VALUE #( sign = 'I' "E
 *                    option = 'EQ' " EQ
 *                       low = '4996.00' ) to lr_price.
-*
+**
 *    SELECT FROM /dmo/flight
 *    FIELDS *
 *     WHERE price IN @lr_price
@@ -301,12 +304,12 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 *    SELECT FROM /DMO/I_Flight
 *          FIELDS MIN( MaximumSeats ) AS MinSeats,
 *                 MAX( MaximumSeats ) AS MaxSeats
-*          INTO ( @DATA(lv_minseats), @DATA(lv_maxseats) ).
-*        "   INTO @DATA(ls_min_max).
+*          "INTO ( @DATA(lv_minseats), @DATA(lv_maxseats) ).
+*           INTO @DATA(ls_min_max).
 *
 *    IF sy-subrc = 0.
-*      out->write( |Min Seats: { lv_minseats }, Max Seats: { lv_maxseats }| ).
-*     " out->write( ls_min_max ).
+*      "out->write( |Min Seats: { lv_minseats }, Max Seats: { lv_maxseats }| ).
+*      out->write( ls_min_max ).
 *    ENDIF.
 
 *    SELECT FROM /DMO/I_Flight
@@ -440,27 +443,27 @@ CLASS zcl_select_sql_one_log_c383 IMPLEMENTATION.
 
 * OFFSET
 
-*    DATA: lv_page_number      TYPE i VALUE 2,
-*          lv_records_per_page TYPE i VALUE 10.
-*
-*    DATA: gv_offset TYPE int8.
-*
-** Page 1 = Block 0
-** Page 2 = Block 1
-*
-*    gv_offset = ( lv_page_number - 1 ) * lv_records_per_page.
-*
-*    SELECT FROM /DMO/I_Flight
-*    FIELDS *
-*    WHERE CurrencyCode = 'USD'
-*    ORDER BY AirlineID, ConnectionID, FlightDate ASCENDING
-*    INTO TABLE @DATA(lt_results)
-*    OFFSET @gv_offset
-*    UP TO @lv_records_per_page ROWS.
-*
-*    IF sy-subrc = 0.
-*      out->write( lt_results ).
-*    ENDIF.
+    DATA: lv_page_number      TYPE i VALUE 2,
+          lv_records_per_page TYPE i VALUE 10.
+
+    DATA: gv_offset TYPE int8.
+
+* Page 1 = Block 0
+* Page 2 = Block 1
+
+    gv_offset = ( lv_page_number - 1 ) * lv_records_per_page.
+
+    SELECT FROM /DMO/I_Flight
+    FIELDS *
+    WHERE CurrencyCode = 'USD'
+    ORDER BY AirlineID, ConnectionID, FlightDate ASCENDING
+    INTO TABLE @DATA(lt_results)
+    OFFSET @gv_offset
+    UP TO @lv_records_per_page ROWS.
+
+    IF sy-subrc = 0.
+      out->write( lt_results ).
+    ENDIF.
 
   ENDMETHOD.
 
