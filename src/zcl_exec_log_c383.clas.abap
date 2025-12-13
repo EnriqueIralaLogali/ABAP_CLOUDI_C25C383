@@ -244,7 +244,8 @@ CLASS zcl_exec_log_c383 IMPLEMENTATION.
 
 
 
-
+    SELECT * FROM /dmo/flight
+    INTO TABLE @DATA(lt_results).
 
   ENDMETHOD.
 
